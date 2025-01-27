@@ -5,10 +5,12 @@ from datetime import datetime
 from typing import List, Type
 
 import serial
+from pydantic.v1 import BaseConfig
 from smspdudecoder.easy import read_incoming_sms
 
 from models.messages_models import SMSMessage
-from repositories.saver import BaseSMSRepository, CSVSaverRepository
+from repositories.saver import BaseSMSRepository, CSVSaverRepository, PostgresSaverRepository
+from settings import config
 
 
 class ModemGSM:
@@ -17,9 +19,10 @@ class ModemGSM:
     """
     received: List[SMSMessage]
 
-    def __init__(self, tty_name: str, logger, sms_saver: Type[BaseSMSRepository]):
+    def __init__(self, tty_name: str, logger, sms_saver: Type[BaseSMSRepository], config: BaseConfig):
+        self.config = config
         self.logger = logger
-        self.sms_saver = sms_saver()
+        self.sms_saver = sms_saver(config)
         self.ser = serial.Serial()
         self.ser.port = tty_name
         self.serial_config()
@@ -107,7 +110,7 @@ class ModemGSM:
         self.ser.rtscts = False  # Disable (RTS/CTS) flow Control
         self.ser.dsrdtr = False  # Disable (DSR/DTR) flow Control
         self.ser.writeTimeout = 2
-        self.received = self.sms_saver.get_messages()
+        # self.received = self.sms_saver.get_messages()
 
     def post_config(self):
         self.cmd('AT+CPMS="MT"')
@@ -125,6 +128,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     log = logging.getLogger('Modem')
 
-    modem = ModemGSM(tty_name='/dev/ttyUSB0', logger=log, sms_saver=CSVSaverRepository)
+    modem = ModemGSM(tty_name='/dev/ttyUSB0', logger=log, sms_saver=PostgresSaverRepository, config=config)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(modem.cycle_sms_get())

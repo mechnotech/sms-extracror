@@ -1,0 +1,13 @@
+version: '3.9'
+
+services:
+
+  sms-extractor:
+    build: .
+    restart: unless-stopped
+    container_name: sms-extract
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    env_file:
+      - .env
+    entrypoint: ['python', 'src/modem.py']

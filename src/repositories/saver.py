@@ -1,12 +1,15 @@
 import csv
 from typing import List
 
+import psycopg2
+
 from models.messages_models import SMSMessage
+from settings import Settings
 
 
 class BaseSMSRepository:
 
-    def __init__(self):
+    def __init__(self, config = None):
         pass
 
     def save_messages(self, **kwargs):
@@ -24,7 +27,7 @@ class CSVSaverRepository(BaseSMSRepository):
     def save_messages(self, incoming_messages: List[SMSMessage]):
         if not incoming_messages:
             return
-        fieldnames = ['sender', 'content', 'date', 'partial']
+        fieldnames = ['sender', 'content', 'received_date', 'partial']
         with open(self.path, 'a', newline='') as fp:
             writer = csv.DictWriter(fp, fieldnames=fieldnames)
             if fp.tell() == 0:
@@ -43,3 +46,36 @@ class CSVSaverRepository(BaseSMSRepository):
         except FileNotFoundError:
             pass
         return messages
+
+class PostgresSaverRepository(BaseSMSRepository):
+    def __init__(self, config: Settings):
+        super().__init__()
+        self.config = config
+        self.connection = psycopg2.connect(**self.config.psycopg_dsn)
+        self.cur = self.connection.cursor()
+
+    def __del__(self):
+        if not self.connection.closed:
+            self.cur.close()
+            self.connection.close()
+
+    def save_messages(self, incoming_messages: List[SMSMessage]):
+
+        if not incoming_messages:
+            return
+        sql = '''
+        INSERT INTO service.sms_log (sender, content, received_date, partial)
+        VALUES (%(sender)s, %(content)s, %(received_date)s, %(partial)s)'''
+
+        self.cur.executemany(sql, [x.dict() for x in incoming_messages])
+        res = self.connection.commit()
+
+
+        print(res)
+
+
+
+
+
+
+

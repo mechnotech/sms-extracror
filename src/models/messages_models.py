@@ -1,13 +1,13 @@
 from datetime import datetime
 from typing import Optional
 
-from pydantic import BaseModel, field_validator
+from pydantic import BaseModel, field_validator, Field
 
 
 class SMSMessage(BaseModel):
     sender: str
     content: str
-    date: datetime
+    received_date: datetime = Field(alias='date')
     partial: Optional[dict]
 
     @field_validator('partial', mode='before')
