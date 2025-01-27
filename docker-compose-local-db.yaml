@@ -1,0 +1,34 @@
+version: '3.9'
+
+services:
+
+  sms-extractor:
+    build: .
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        #max_attempts: 2
+        window: 120s
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 50M
+        reservations:
+          cpus: '0.15'
+          memory: 20M
+    container_name: sms-extract
+    networks:
+      - db-net
+    devices:
+      - /dev/ttyUSB0:/dev/ttyUSB0
+    environment:
+      DB_POSTGRES_HOST: ${DB_POSTGRES_HOST}
+    env_file:
+      - .env
+    entrypoint: ['python', 'src/modem.py']
+
+networks:
+  db-net:
+    name: db-net
+    external: true
