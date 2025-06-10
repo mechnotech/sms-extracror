@@ -14,8 +14,8 @@ class Settings(BaseSettings):
     app_chat_id: str
 
     app_modem_name: str = 'huawey modem'
-    app_phone_number: str
-    app_control_phone_number: str
+    app_phone_number: str = None
+    app_control_phone_number: str = None
     app_control_message_pdu: str
 
     db_postgres_host: str
