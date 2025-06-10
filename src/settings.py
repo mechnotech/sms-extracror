@@ -9,6 +9,15 @@ class Settings(BaseSettings):
     dev_mode: bool = False
     log_level: str = 'DEBUG'
 
+    # Telegram settings
+    app_message_creds: str
+    app_chat_id: str
+
+    app_modem_name: str = 'huawey modem'
+    app_phone_number: str
+    app_control_phone_number: str
+    app_control_message_pdu: str
+
     db_postgres_host: str
     db_postgres_port: int = 5432
     db_postgres_user: str
@@ -59,3 +68,4 @@ class Settings(BaseSettings):
 
 
 config = Settings()
+pass

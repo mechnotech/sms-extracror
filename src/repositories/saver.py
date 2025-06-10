@@ -27,7 +27,7 @@ class CSVSaverRepository(BaseSMSRepository):
     def save_messages(self, incoming_messages: List[SMSMessage]):
         if not incoming_messages:
             return
-        fieldnames = ['sender', 'content', 'received_date', 'partial']
+        fieldnames = ['sender', 'content', 'received_date', 'partial', 'service_id']
         with open(self.path, 'a', newline='') as fp:
             writer = csv.DictWriter(fp, fieldnames=fieldnames)
             if fp.tell() == 0:
@@ -64,8 +64,8 @@ class PostgresSaverRepository(BaseSMSRepository):
         if not incoming_messages:
             return
         sql = '''
-        INSERT INTO service.sms_log (sender, content, received_date, partial)
-        VALUES (%(sender)s, %(content)s, %(received_date)s, %(partial)s)'''
+        INSERT INTO service.sms_log (sender, content, received_date, partial, service_id)
+        VALUES (%(sender)s, %(content)s, %(received_date)s, %(partial)s, %(service_id)s)'''
 
         self.cur.executemany(sql, [x.dict() for x in incoming_messages])
         res = self.connection.commit()

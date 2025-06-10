@@ -4,6 +4,7 @@ from typing import Optional
 
 from pydantic import BaseModel, field_validator, Field
 
+from settings import config
 
 
 class SMSMessage(BaseModel):
@@ -11,6 +12,7 @@ class SMSMessage(BaseModel):
     content: str
     received_date: datetime = Field(alias='date')
     partial: Optional[dict | str]
+    service_id: str = config.app_modem_name
 
     @field_validator('partial', mode='before')
     def validate_partial(cls, v):

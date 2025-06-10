@@ -1,16 +1,16 @@
 import asyncio
 import logging
 import signal
+import time
 from datetime import datetime
 from typing import List, Type
 
 import serial
-from pydantic.v1 import BaseConfig
 from smspdudecoder.easy import read_incoming_sms
 
 from models.messages_models import SMSMessage
-from repositories.saver import BaseSMSRepository, CSVSaverRepository, PostgresSaverRepository
-from settings import config
+from repositories.saver import BaseSMSRepository, PostgresSaverRepository
+from settings import Settings, config
 
 
 class ModemGSM:
@@ -19,7 +19,7 @@ class ModemGSM:
     """
     received: List[SMSMessage]
 
-    def __init__(self, tty_name: str, logger, sms_saver: Type[BaseSMSRepository], config: BaseConfig):
+    def __init__(self, tty_name: str, logger, sms_saver: Type[BaseSMSRepository], config: Settings):
         self.config = config
         self.logger = logger
         self.sms_saver = sms_saver(config)
@@ -32,6 +32,7 @@ class ModemGSM:
         self.post_config()
         self.received = []
         self.logger.info(f'OK! Connected to {self.ser.name}')
+        self.CHECK_MINUTES_LIMIT = 43200 / 2  # Two weeks
 
         signal.signal(signal.SIGINT, self.close_connection)
         signal.signal(signal.SIGTERM, self.close_connection)
@@ -42,6 +43,15 @@ class ModemGSM:
     def cmd(self, cmd_str):
         cmd_str = (cmd_str + '\r\n').encode('utf-8')
         self.ser.write(cmd_str)
+
+    async def send_control_sms(self):
+        # Отправить SMS
+        self.cmd(f'AT+CMGS=16')
+        await asyncio.sleep(2)
+        self.ser.write(self.config.app_control_message_pdu.encode())
+        await asyncio.sleep(2)
+        self.ser.write(bytes.fromhex('1a'))
+
 
     async def get_answer(self):
         while True:
@@ -83,7 +93,9 @@ class ModemGSM:
 
     async def cycle_sms_get(self):
         cached_income = None
+        minutes_from_start = 0
         start_minute = datetime.now().minute
+
         async for income in self.get_answer():
             if income is not None:
                 if cached_income != income:
@@ -97,8 +109,14 @@ class ModemGSM:
                 self.logger.debug('send command AT')
                 self.cmd('AT+CMGL=4')  # Read all SMS
             if current_minute != start_minute:
-                self.logger.info(f'Received messages: {len(self.received)}. Waiting for new messages...')
+                self.logger.info(f'Received messages: {len(self.received)}.'
+                                 f' Minutes to send control SMS {self.CHECK_MINUTES_LIMIT - minutes_from_start}.'
+                                 f' Waiting for new messages...')
                 start_minute = current_minute
+                minutes_from_start += 1
+                if minutes_from_start >= self.CHECK_MINUTES_LIMIT:
+                    await self.send_control_sms()
+                    minutes_from_start = 0
 
     def serial_config(self):
         self.ser.baudrate = 9600
