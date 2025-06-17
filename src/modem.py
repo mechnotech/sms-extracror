@@ -8,6 +8,7 @@ from typing import List, Type
 import serial
 from smspdudecoder.easy import read_incoming_sms
 
+from config_loader import ExtraConfig
 from models.messages_models import SMSMessage
 from repositories.saver import BaseSMSRepository, PostgresSaverRepository
 from settings import Settings, config
@@ -32,13 +33,16 @@ class ModemGSM:
         self.post_config()
         self.received = []
         self.logger.info(f'OK! Connected to {self.ser.name}')
-        self.CHECK_MINUTES_LIMIT = 43200 / 2  # Two weeks
-
+        self.CHECK_MINUTES_LIMIT = 43200 // 2  # Two weeks
+        self.extra_cfg = ExtraConfig(self.CHECK_MINUTES_LIMIT)
+        self.CHECK_MINUTES_LIMIT = self.extra_cfg.min_left
         signal.signal(signal.SIGINT, self.close_connection)
         signal.signal(signal.SIGTERM, self.close_connection)
 
     def __del__(self):
         self.close_connection()
+
+
 
     def cmd(self, cmd_str):
         cmd_str = (cmd_str + '\r\n').encode('utf-8')
@@ -93,7 +97,6 @@ class ModemGSM:
 
     async def cycle_sms_get(self):
         cached_income = None
-        minutes_from_start = 0
         start_minute = datetime.now().minute
 
         async for income in self.get_answer():
@@ -110,13 +113,13 @@ class ModemGSM:
                 self.cmd('AT+CMGL=4')  # Read all SMS
             if current_minute != start_minute:
                 self.logger.info(f'Received messages: {len(self.received)}.'
-                                 f' Minutes to send control SMS {self.CHECK_MINUTES_LIMIT - minutes_from_start}.'
+                                 f' {self.extra_cfg.min_left} minutes left to send control SMS.'
                                  f' Waiting for new messages...')
                 start_minute = current_minute
-                minutes_from_start += 1
-                if minutes_from_start >= self.CHECK_MINUTES_LIMIT:
+                self.extra_cfg.decrease()
+                if self.extra_cfg.min_left <= 0:
                     await self.send_control_sms()
-                    minutes_from_start = 0
+                    self.extra_cfg.reset()
 
     def serial_config(self):
         self.ser.baudrate = 9600
