@@ -95,6 +95,18 @@ class ModemGSM:
         self.received.extend(possible_messages)
         self.truncate_modem_sms()
 
+    def parce_dbi_level(self, income: List):
+        if not income:
+            return
+
+        for elem in income:
+            new_elem = elem.decode()
+            if '+CSQ' in new_elem:
+                dbi_raw = new_elem.split(' ')[1]
+                dbi_raw = dbi_raw.split(',')[0]
+                dbi = (-113 + int(str(dbi_raw)) * 2)
+                return dbi
+
     async def cycle_sms_get(self):
         cached_income = None
         start_minute = datetime.now().minute
@@ -102,7 +114,15 @@ class ModemGSM:
         async for income in self.get_answer():
             if income is not None:
                 if cached_income != income:
-                    self.logger.info(income)
+                    dbi = self.parce_dbi_level(income)
+
+                    if dbi:
+                        self.logger.info(f'GSM signal level {dbi}')
+                    else:
+                        self.logger.info(income)
+
+                    dbi = None
+
                     cached_income = income
                 self.message_income_processing(income)
 
@@ -111,10 +131,13 @@ class ModemGSM:
             if ts % self.poll_interval_sec == 0:
                 self.logger.debug('send command AT')
                 self.cmd('AT+CMGL=4')  # Read all SMS
+
             if current_minute != start_minute:
+                self.cmd('AT+CSQ')
                 self.logger.info(f'Received messages: {len(self.received)}.'
                                  f' {self.extra_cfg.min_left} minutes left to send control SMS.'
                                  f' Waiting for new messages...')
+
                 start_minute = current_minute
                 self.extra_cfg.decrease()
                 if self.extra_cfg.min_left <= 0:
