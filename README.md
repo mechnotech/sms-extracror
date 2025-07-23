@@ -8,11 +8,23 @@ Modem HUAWEI E1750
 ### Install
 
 make venv & install libs
-```
-python3 -m venv venv
+
+classic pip
+
+`python -m venv venv`
+
+`pip install -r requirements.txt --extra-index-url https://nexus.webzaim.tech/repository/pip/simple`
+
+fast uv
+
+`pip install uv==0.6.14`
+
+```bash
+uv venv venv --python 3.11
 source venv/bin/activate
-pip install -r requirements.txt
+uv pip install -r requirements.txt
 ```
+
 
 ### Run
 
