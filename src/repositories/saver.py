@@ -68,10 +68,18 @@ class PostgresSaverRepository(BaseSMSRepository):
         VALUES (%(sender)s, %(content)s, %(received_date)s, %(partial)s, %(service_id)s)'''
 
         self.cur.executemany(sql, [x.dict() for x in incoming_messages])
-        res = self.connection.commit()
+        self.connection.commit()
 
 
-        print(res)
+    def read_sql(self, sql: str):
+        self.cur.execute(sql)
+        result = self.cur.fetchone()
+        return result
+
+    def execute_sql(self, sql: str):
+        self.cur.execute(sql)
+        result = self.connection.commit()
+        return result
 
 
 

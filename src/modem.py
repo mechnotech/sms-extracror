@@ -1,14 +1,13 @@
 import asyncio
 import logging
 import signal
-import time
 from datetime import datetime
 from typing import List, Type
 
 import serial
 from smspdudecoder.easy import read_incoming_sms
 
-from config_loader import ExtraConfig
+from config_loader import ExtraConfig, PGExtraConfig
 from models.messages_models import SMSMessage
 from repositories.saver import BaseSMSRepository, PostgresSaverRepository
 from settings import Settings, config
@@ -32,9 +31,9 @@ class ModemGSM:
         self.poll_interval_sec = 5
         self.post_config()
         self.received = []
-        self.logger.info(f'OK! Connected to {self.ser.name}')
+        self.logger.info(f'OK! Worker "{self.config.app_modem_name}" Connected to {self.ser.name}')
         self.CHECK_MINUTES_LIMIT = 43200 // 2  # Two weeks
-        self.extra_cfg = ExtraConfig(self.CHECK_MINUTES_LIMIT)
+        self.extra_cfg = PGExtraConfig(self.CHECK_MINUTES_LIMIT, config, self.sms_saver)
         self.CHECK_MINUTES_LIMIT = self.extra_cfg.min_left
         signal.signal(signal.SIGINT, self.close_connection)
         signal.signal(signal.SIGTERM, self.close_connection)
