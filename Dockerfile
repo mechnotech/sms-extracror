@@ -7,6 +7,6 @@ RUN pip install --no-cache-dir uv==0.6.14
 WORKDIR /code
 
 COPY requirements.txt /code/
-RUN uv pip install -r requirements.txt
+RUN uv pip install -r requirements.txt --system
 CMD mkdir code/csvs
 COPY ./src /code/src
