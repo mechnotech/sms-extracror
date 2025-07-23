@@ -7,7 +7,7 @@ from typing import List, Type
 import serial
 from smspdudecoder.easy import read_incoming_sms
 
-from config_loader import ExtraConfig, PGExtraConfig
+from config_loader import PGExtraConfig
 from models.messages_models import SMSMessage
 from repositories.saver import BaseSMSRepository, PostgresSaverRepository
 from settings import Settings, config

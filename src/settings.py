@@ -68,4 +68,3 @@ class Settings(BaseSettings):
 
 
 config = Settings()
-pass
