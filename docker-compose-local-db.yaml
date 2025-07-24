@@ -7,7 +7,6 @@ services:
       restart_policy:
         condition: on-failure
         delay: 60s
-        #max_attempts: 2
         window: 120s
       resources:
         limits:
@@ -16,7 +15,7 @@ services:
         reservations:
           cpus: '0.15'
           memory: 20M
-    container_name: sms-extract
+    container_name: sms-exporter
     networks:
       - db-net
     environment:
