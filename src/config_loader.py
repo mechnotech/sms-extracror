@@ -1,10 +1,10 @@
-from repositories.saver import PostgresSaverRepository
+from repositories.pg_repository import PostgresRepository
 from settings import Settings
 
 
 class PGExtraConfig:
 
-    def __init__(self, minutes_left_default: int, config: Settings, pg_conn: PostgresSaverRepository):
+    def __init__(self, minutes_left_default: int, config: Settings, pg_conn: PostgresRepository):
 
         self.config = config
         self.pg_conn = pg_conn
@@ -22,7 +22,8 @@ class PGExtraConfig:
             return int(raw_row[1])
 
     def set_new_record(self):
-        sql = f"insert into service.workflow (service_id, minutes_left) values ('{self.name}', {self.minutes_left_default});"
+        sql = (f"insert into service.workflow (service_id, minutes_left)"
+               f" values ('{self.name}', {self.minutes_left_default});")
         self.pg_conn.execute_sql(sql)
 
     def _save(self):

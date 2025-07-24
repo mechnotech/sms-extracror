@@ -11,7 +11,6 @@ class Settings(BaseSettings):
 
     # Telegram settings
     app_message_creds: str
-    app_chat_id: str
 
     app_modem_name: str
     app_phone_number: str = ''

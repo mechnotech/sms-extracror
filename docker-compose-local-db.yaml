@@ -1,6 +1,29 @@
 version: '3.9'
 
 services:
+  sms-exporter:
+    build: .
+    deploy:
+      restart_policy:
+        condition: on-failure
+        delay: 60s
+        #max_attempts: 2
+        window: 120s
+      resources:
+        limits:
+          cpus: '0.30'
+          memory: 100M
+        reservations:
+          cpus: '0.15'
+          memory: 20M
+    container_name: sms-extract
+    networks:
+      - db-net
+    environment:
+      DB_POSTGRES_HOST: ${DB_POSTGRES_HOST}
+    env_file:
+      - .env
+    entrypoint: [ 'python', 'src/sms_export.py' ]
 
   sms-extractor:
     build: .

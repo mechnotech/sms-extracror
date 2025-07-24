@@ -9,7 +9,7 @@ from smspdudecoder.easy import read_incoming_sms
 
 from config_loader import PGExtraConfig
 from models.messages_models import SMSMessage
-from repositories.saver import BaseSMSRepository, PostgresSaverRepository
+from repositories.pg_repository import PostgresRepository
 from settings import Settings, config
 
 
@@ -19,7 +19,7 @@ class ModemGSM:
     """
     received: List[SMSMessage]
 
-    def __init__(self, tty_name: str, logger, sms_saver: Type[BaseSMSRepository], config: Settings):
+    def __init__(self, tty_name: str, logger, sms_saver: Type[PostgresRepository], config: Settings):
         self.config = config
         self.logger = logger
         self.sms_saver = sms_saver(config)
@@ -171,6 +171,6 @@ if __name__ == '__main__':
     logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(name)s - %(levelname)s - %(message)s')
     log = logging.getLogger('Modem')
 
-    modem = ModemGSM(tty_name='/dev/ttyUSB0', logger=log, sms_saver=PostgresSaverRepository, config=config)
+    modem = ModemGSM(tty_name='/dev/ttyUSB0', logger=log, sms_saver=PostgresRepository, config=config)
     loop = asyncio.get_event_loop()
     loop.run_until_complete(modem.cycle_sms_get())
