@@ -46,3 +46,7 @@ modem = ModemGSM(tty_name='/dev/ttyUSB0', logger=log, sms_saver=CSVSaverReposito
 service_id = APP_MODEM_NAME
 
 external_id  = id ТГ чата, куда бот отправит сообщение
+
+# PDU
+
+Код СМС можно сформировать тут - https://www.smsdeliverer.com/online-sms-pdu-encoder.aspx
