@@ -17,18 +17,17 @@ class SMSExporter:
     def __init__(self, logger, pg_repo: Type[PostgresRepository], config: Settings, alerting: Type[TelegramAlerting]):
         self.config = config
         self.logger = logger
-        self.name = config.app_modem_name
         self.alerting = alerting(config, logger)
         self.pg_conn = pg_repo(config)
         self.chat_id = None
         self.top_id = None
 
-    def get_workflow(self):
-        sql = f"select * from service.workflow where service_id = '{self.name}'"
+    def get_workflow(self, service_id: str):
+        sql = f"select * from service.workflow where service_id = '{service_id}'"
         result = self.pg_conn.read_sql(sql)
         if not result:
             self.logger.warnig(
-                f'External service id not specified (chat id) in workflow table for service_id={self.name}'
+                f'External service id not specified (chat id) in workflow table for service_id={service_id}'
             )
             return
 
@@ -38,8 +37,8 @@ class SMSExporter:
         self.alerting.chat_id = self.chat_id
 
 
-    def get_latest_sms(self):
-        raw_messages = self.pg_conn.read_messages(top_id=self.top_id, name=self.name)
+    def get_latest_sms(self, service_id: str):
+        raw_messages = self.pg_conn.read_messages(top_id=self.top_id, name=service_id)
         if not raw_messages:
             return
 
@@ -69,25 +68,8 @@ class SMSExporter:
                 contents=group,
                 date=f_elem.received_date,
                 parts_total=f_elem.part_count,
+                service_id=f_elem.service_id
             )
-            c_sms.check()
-
-            if c_sms.is_completed:
-                composite_sms.append(c_sms)
-                # current_max_id = max(x.id for x in group)
-                pass
-
-        composite_sms = []
-        for group in sms_groups.values():
-            f_elem = group[0]
-
-            c_sms = CompositeSMS(
-                        sender=f_elem.sender,
-                        contents=group,
-                        date=f_elem.received_date,
-                        parts_total=f_elem.part_count,
-                    )
-
             c_sms.check()
 
             if c_sms.is_completed:
@@ -96,11 +78,11 @@ class SMSExporter:
         composite_sms.sort(key=lambda x: x.max_id)
         return composite_sms
 
-    def set_max_id(self):
-        sql = f"update service.workflow set top_id = {self.top_id} where service_id = '{self.name}'"
+    def set_max_id(self, service_id: str):
+        sql = f"update service.workflow set top_id = {self.top_id} where service_id = '{service_id}'"
         self.pg_conn.execute_sql(sql)
 
-    def export(self, sms_to_export: List[CompositeSMS]):
+    def export(self, sms_to_export: List[CompositeSMS], service_id: str ):
 
         for sms in sms_to_export:
             msg = (
@@ -121,19 +103,22 @@ class SMSExporter:
             time.sleep(0.5)
             if self.top_id < sms.max_id:
                 self.top_id = sms.max_id
-                self.set_max_id()
+                self.set_max_id(service_id)
             self.logger.info(f'Sent SMS top_id {self.top_id}')
 
 
     def run_pipeline(self):
-        self.get_workflow()
+
         cnt = 1
         while True:
+            services = self.pg_conn.get_services()
             s_time = datetime.now().second
             if s_time % 10 == 0:
-                sms_to_export = self.get_latest_sms()
-                if sms_to_export:
-                    self.export(sms_to_export)
+                for service_id in services:
+                    self.get_workflow(service_id)
+                    sms_to_export = self.get_latest_sms(service_id)
+                    if sms_to_export:
+                        self.export(sms_to_export, service_id)
 
             time.sleep(1)
             cnt += 1

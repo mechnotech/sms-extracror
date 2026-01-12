@@ -29,6 +29,13 @@ class PostgresRepository:
         self.cur.executemany(sql, [x.dict() for x in incoming_messages])
         self.connection.commit()
 
+    def get_services(self):
+        sql = 'select service_id from service.workflow'
+        self.cur.execute(sql)
+        result = self.cur.fetchall()
+        if len(result) > 0:
+            return [x[0] for x in result]
+        raise Exception('service.workflow table is empty')
 
     def read_messages(self, top_id: int, name: str):
         sql = f"select * from service.sms_log where service_id = '{name}' and id > {top_id}"

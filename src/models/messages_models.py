@@ -31,7 +31,7 @@ class CompositeSMS(BaseModel):
     contents: list[RecordedSMS]
     full_text: Optional[str] = ''
     received_date: datetime = Field(alias='date')
-    service_id: str = config.app_modem_name
+    service_id: str = None
     is_completed: bool = False
     parts_total: Optional[int] = None
     max_id: Optional[int] = None

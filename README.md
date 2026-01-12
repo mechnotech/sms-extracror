@@ -38,3 +38,11 @@ python3 src/modem.py
 modem = ModemGSM(tty_name='/dev/ttyUSB0', logger=log, sms_saver=CSVSaverRepository)
 ``
 
+# Для поддержки нескольких модемов
+
+Создайте и заполните таблицу из [init.sql](src/sqls/init.sql)
+
+
+service_id = APP_MODEM_NAME
+
+external_id  = id ТГ чата, куда бот отправит сообщение
