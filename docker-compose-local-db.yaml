@@ -69,7 +69,7 @@ services:
     networks:
       - db-net
     devices:
-      - /dev/ttyUSB0:/dev/ttyUSB3
+      - /dev/ttyUSB3:/dev/ttyUSB0
     environment:
       DB_POSTGRES_HOST: ${DB_POSTGRES_HOST}
     env_file:
