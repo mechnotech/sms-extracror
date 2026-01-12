@@ -108,13 +108,15 @@ class SMSExporter:
 
 
     def run_pipeline(self):
-
+        services = self.pg_conn.get_services()
+        self.logger.info(f'Now find {len(services)} service(s). {services}')
         cnt = 1
         while True:
             services = self.pg_conn.get_services()
             s_time = datetime.now().second
             if s_time % 10 == 0:
                 for service_id in services:
+                    self.logger.info(f'Service: {service_id}')
                     self.get_workflow(service_id)
                     sms_to_export = self.get_latest_sms(service_id)
                     if sms_to_export:
